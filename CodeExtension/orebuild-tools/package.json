@@ -1,0 +1,25 @@
+{
+  "name": "orebuild-tools",
+  "displayName": "OreBuild tools",
+  "description": "OreBuild tools",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.72.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "orebuild",
+      "aliases": ["OreBuild", "orebuild"],
+      "extensions": ["OreBuild",".OreBuild"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "orebuild",
+      "scopeName": "source.OreBuild",
+      "path": "./syntaxes/orebuild.tmLanguage.json"
+    }]
+  }
+}

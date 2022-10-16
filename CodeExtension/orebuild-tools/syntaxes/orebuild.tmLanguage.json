@@ -1,0 +1,78 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "OreBuild",
+	"patterns": [
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#numerics"
+		},
+		{
+			"include": "#comments"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"name": "keyword.control.orebuild",
+			"match": "\\b(files|sources|build\\-command|options)\\b"
+		},
+		"numerics": {
+			"name": "constant.numeric.orebuild",
+			"match": "[0-9]+"
+		},
+		"strings": {
+			"patterns": [
+				{
+					"name": "string.quoted.double.orebuild",
+					"begin": "\"",
+					"end": "\"",
+					"patterns": [
+						{
+							"name": "constant.character.escape.orebuild",
+							"match": "\\\\."
+						}
+					]
+				},
+				{
+					"name": "string.quoted.single.orebuild",
+					"begin": "'",
+					"end": "'",
+					"patterns": [
+						{
+							"name": "constant.character.escape.orebuild",
+							"match": "\\\\."
+						}
+					]
+				}
+			]
+		},
+		"comments": {
+			"patterns": [
+				{
+					"begin": "/\\*",
+					"captures": {
+						"0": {
+							"name": "comment.block.orebuild"
+						}
+					},
+					"end": "\\*/",
+					"name": "comment.block.orebuild"
+				},
+				{
+					"captures": {
+						"1": {
+							"name": "comment.line.double-slash.orebuild"
+						}
+					},
+					"match": "(//).*$\\n?",
+					"name": "comment.line.double-slash.orebuild"
+				}
+			]
+		}
+	},
+	"scopeName": "source.OreBuild"
+}

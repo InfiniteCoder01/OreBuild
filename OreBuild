@@ -1,0 +1,12 @@
+OreBuild {
+    files: "*";
+    sources: "*.cpp";
+    sources: "*.cpp";
+    build-command: "Test ext";
+    options: "";
+}
+/**
+dsds
+dsds
+dsds/
+sdsd*/
