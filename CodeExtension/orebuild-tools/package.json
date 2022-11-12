@@ -3,6 +3,7 @@
   "displayName": "OreBuild tools",
   "description": "OreBuild tools",
   "version": "0.0.1",
+  "repository": "https://github.com/InfiniteCoder01/OreBuild",
   "engines": {
     "vscode": "^1.72.0"
   },
@@ -10,16 +11,26 @@
     "Programming Languages"
   ],
   "contributes": {
-    "languages": [{
-      "id": "orebuild",
-      "aliases": ["OreBuild", "orebuild"],
-      "extensions": ["OreBuild",".OreBuild"],
-      "configuration": "./language-configuration.json"
-    }],
-    "grammars": [{
-      "language": "orebuild",
-      "scopeName": "source.OreBuild",
-      "path": "./syntaxes/orebuild.tmLanguage.json"
-    }]
+    "languages": [
+      {
+        "id": "orebuild",
+        "aliases": [
+          "OreBuild",
+          "orebuild"
+        ],
+        "extensions": [
+          "OreBuild",
+          ".OreBuild"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "orebuild",
+        "scopeName": "source.OreBuild",
+        "path": "./syntaxes/orebuild.tmLanguage.json"
+      }
+    ]
   }
 }
