@@ -8,7 +8,8 @@
     "vscode": "^1.72.0"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Snippets"
   ],
   "contributes": {
     "languages": [
@@ -30,6 +31,12 @@
         "language": "orebuild",
         "scopeName": "source.OreBuild",
         "path": "./syntaxes/orebuild.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "orebuild",
+        "path": "./snippets.json"
       }
     ]
   }

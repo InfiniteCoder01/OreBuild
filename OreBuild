@@ -6,6 +6,8 @@ platform "Windows" {
 module "Sub" {
     path: "test/sub"; // Path is required for submodules, it will be addet to include path of parent module, you can add multiple paths
     files: "$path/*.cpp";
+    // You can override build command here:
+    // command: "@echo g++ $files -o $out -I*$include";
 }
 
 module "Main" {

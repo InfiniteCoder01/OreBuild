@@ -1,0 +1,23 @@
+{
+	"Windows C++ default": {
+		"prefix": "win",
+		"body": [
+			"platform \"Windows\" {",
+			"    command: \"g++ \\$files -o \\$out -I*\\$include\";",
+			"    submoduleCommand: \"*g++ -c \\$files -o \\$out -I*\\$include\";",
+			"}"
+		],
+		"description": "OreBuild default Windows platform to build C++ with g++/MinGW"
+	},
+	"Default Main": {
+		"prefix": "main",
+		"body": [
+			"module \"Main\" {",
+			"    files: \"src/**.cpp\";",
+			"    output: \"out.exe\";",
+			"    flags: \"-O3\";",
+			"}"
+		],
+		"description": "OreBuild default C++ Main module"
+	}
+}

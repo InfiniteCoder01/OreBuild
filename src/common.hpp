@@ -101,7 +101,7 @@ std::string escape(std::string str) {
   return std::string(std::regex_replace(str, specialChars, R"(\$&)"));
 }
 
-bool wildcardMatch(const std::string& str, const std::string& pattern) { return std::regex_match(str, std::regex(replace(replace(escape(pattern), "?", "."), "*", ".*"))); }
+bool wildcardMatch(const std::string& str, const std::string& pattern) { return std::regex_match(str, std::regex(replace(replace(replace(escape(pattern), "?", "."), "**", ".+"), "*", "[^/]+"))); }
 
 std::string unifyPath(std::string path) {
   path = replace(path, "\\", "/");
@@ -112,6 +112,7 @@ std::string unifyPath(std::string path) {
 std::vector<std::string> wildcard(const std::string& pattern, bool dir = false) {  // TODO: optimize
   std::vector<std::string> result;
   std::string parent = pattern.substr(0, pattern.find_last_of("/\\", pattern.find_first_of("*?")));
+  if(parent.length() == pattern.length()) parent = ".";
   for (std::filesystem::recursive_directory_iterator i(parent), end; i != end; i++) {
     if (is_directory(i->path()) == dir) {
       std::string path = unifyPath(i->path().string());

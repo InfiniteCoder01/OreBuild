@@ -1,7 +1,8 @@
 #include "common.hpp"
 
 const std::vector<std::string> platformItems = {"command", "submoduleCommand"};
-const std::vector<std::string> moduleItems = {"path", "files", "submodule", "output", "include", "flags"};
+const std::vector<std::string> moduleItems = {"path", "files", "submodule", "output", "include", "flags", "command"};
+const std::vector<std::string> moduleKeeps = {"command"};
 const std::vector<std::string> moduleRepeats = {"path", "files", "submodule", "include", "flags"};
 const std::vector<std::string> moduleWildcards = {"path", "files", "include"};
 
@@ -66,7 +67,7 @@ bool buildModule(std::string name, bool& skiped) {
   }
 
   std::string output = getOrDefault(current, std::string("output"), std::vector<std::string>{"build/" + name})[0];
-  std::string command = (name != "Main" && platform.count("submoduleCommand")) ? platform["submoduleCommand"] : platform["command"];
+  std::string command = getOrDefault(current, std::string("command"), std::vector<std::string>{(name != "Main" && platform.count("submoduleCommand")) ? platform["submoduleCommand"] : platform["command"]})[0];
   insert(command, "$include", includes);
   for (const auto& flag : getOrDefault(current, std::string("flags"), std::vector<std::string>{})) command += " " + flag;
 
@@ -94,7 +95,7 @@ bool buildModule(std::string name, bool& skiped) {
     if (!skip && !execute(replace(command, "$out", output))) return false;
     if (name != "Main") objects.push_back(output);
   }
-  if(skip) puts("Skipped!");
+  if (skip) puts(" Skipped!");
 
   skiped = skip;
   return true;
@@ -158,13 +159,16 @@ int main(int argc, char** argv) {
       std::string rawValue = readString(file);
       expect(file, ';');
       std::vector<std::string> values;
-      for (auto value : split(rawValue)) {
-        for (const auto& var : moduleItems) {
-          if (modules[currentModule].count(var)) value = replace(value, '$' + var, modules[currentModule][var][0].c_str());
+      if (std::count(moduleKeeps.begin(), moduleKeeps.end(), item)) values.push_back(rawValue);
+      else {
+        for (auto value : split(rawValue)) {
+          for (const auto& var : moduleItems) {
+            if (modules[currentModule].count(var)) value = replace(value, '$' + var, modules[currentModule][var][0].c_str());
+          }
+          if (std::count(moduleWildcards.begin(), moduleWildcards.end(), item)) {
+            for (const auto& wildcarded : wildcard(value, item != "files")) values.push_back(wildcarded);
+          } else values.push_back(value);
         }
-        if (std::count(moduleWildcards.begin(), moduleWildcards.end(), item)) {
-          for (const auto& wildcarded : wildcard(value, item != "files")) values.push_back(wildcarded);
-        } else values.push_back(value);
       }
       if (modules[currentModule].count(item)) {
         validate(file, item, moduleRepeats, "Repeated property: ");
