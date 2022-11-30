@@ -111,8 +111,10 @@ std::string unifyPath(std::string path) {
 
 std::vector<std::string> wildcard(const std::string& pattern, bool dir = false) {  // TODO: optimize
   std::vector<std::string> result;
-  std::string parent = pattern.substr(0, pattern.find_last_of("/\\", pattern.find_first_of("*?")));
-  if(parent.length() == pattern.length()) parent = ".";
+  size_t wildcardStart = pattern.find_first_of("*?");
+  if (wildcardStart == std::string::npos) return std::vector<std::string>{pattern};
+  std::string parent = pattern.substr(0, pattern.find_last_of("/\\", wildcardStart));
+  if (parent.length() == pattern.length()) parent = ".";
   for (std::filesystem::recursive_directory_iterator i(parent), end; i != end; i++) {
     if (is_directory(i->path()) == dir) {
       std::string path = unifyPath(i->path().string());

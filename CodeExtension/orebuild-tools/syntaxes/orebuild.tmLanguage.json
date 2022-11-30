@@ -18,7 +18,7 @@
 	"repository": {
 		"keywords": {
 			"name": "keyword.control.orebuild",
-			"match": "\\b(platform|module|submodule|command|submoduleCommand|files|path|output|include|flags)\\b"
+			"match": "\\b(platform|module|submodule|command|submoduleCommand|files|path|includePath|output|include|flags)\\b"
 		},
 		"numerics": {
 			"name": "constant.numeric.orebuild",

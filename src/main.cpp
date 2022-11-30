@@ -1,17 +1,17 @@
 #include "common.hpp"
 
-const std::vector<std::string> platformItems = {"command", "submoduleCommand"};
-const std::vector<std::string> moduleItems = {"path", "files", "submodule", "output", "include", "flags", "command"};
+const std::vector<std::string> platformItems = {"command", "submoduleCommand", "flags"};  // TODO: platform flags
+const std::vector<std::string> moduleItems = {"path", "includePath", "files", "submodule", "output", "include", "flags", "command"};
 const std::vector<std::string> moduleKeeps = {"command"};
-const std::vector<std::string> moduleRepeats = {"path", "files", "submodule", "include", "flags"};
-const std::vector<std::string> moduleWildcards = {"path", "files", "include"};
+const std::vector<std::string> moduleRepeats = {"path", "includePath", "files", "submodule", "include", "flags", "command"};
+const std::vector<std::string> moduleWildcards = {"path", "includePath", "files", "include"};
 
 void validate(FILE* file, const std::string& item, const std::vector<std::string>& valids, const std::string& err = "Invalid item: ") {
   if (!std::count(valids.begin(), valids.end(), item)) error(file, err + item + "!");
 }
 
 std::map<std::string, std::map<std::string, std::vector<std::string>>> modules;
-std::map<std::string, std::string> platform;
+std::map<std::string, std::vector<std::string>> platform;
 std::vector<std::string> objects;
 
 bool execute(std::string command) {
@@ -46,66 +46,78 @@ void insert(std::string& command, const std::string& name, const std::vector<std
   }
 }
 
-bool buildModule(std::string name, bool& skiped) {
+std::pair<bool, bool> buildModule(std::string name) {
   if (name == "Main") objects.clear();
   std::map<std::string, std::vector<std::string>>& current = modules[name];
-  if (!current.count("files") || current["files"].empty()) error("No files specified for module '" + name + "'!");
+  if (!current.count("files") || current["files"].empty()) return std::pair(true, true);
 
   std::vector<std::string> includes = getOrDefault(current, std::string("include"), std::vector<std::string>{});
   std::vector<std::string> files = current["files"];
   bool skip = true;
   for (const auto& submodule : getOrDefault(current, std::string("submodule"), std::vector<std::string>{})) {
-    bool skiped;
-    if (!buildModule(submodule, skiped)) return false;
-    if (!skiped) skip = false;
-    if (!modules[submodule].count("path")) error("No path specified for submodule '" + submodule + "'!");
-    for (const auto& include : modules[submodule]["path"]) includes.push_back(include);
+    std::pair<bool, bool> result = buildModule(submodule);
+    if (!result.first) return std::pair(false, false);
+    if (!result.second) skip = false;
+    for (const auto& include : getOrDefault(modules[submodule], std::string("includePath"), std::vector<std::string>{})) includes.push_back(include);
   }
 
   if (name == "Main") {
     for (const auto& object : objects) files.push_back(object);
   }
 
-  std::string output = getOrDefault(current, std::string("output"), std::vector<std::string>{"build/" + name})[0];
-  std::string command = getOrDefault(current, std::string("command"), std::vector<std::string>{(name != "Main" && platform.count("submoduleCommand")) ? platform["submoduleCommand"] : platform["command"]})[0];
-  insert(command, "$include", includes);
-  for (const auto& flag : getOrDefault(current, std::string("flags"), std::vector<std::string>{})) command += " " + flag;
-
-  printf("Building module %s...", name.c_str());
-  bool nl = false;
-  if (command[0] == '*') {
-    command.erase(command.begin());
-    output += '/';
-    for (const auto& file : files) {
-      std::string out = output + file.substr(file.find_last_of("/\\") + 1) + ".o";
-      if (lastModified(out) <= lastModified(file)) {
-        if (!nl) puts(""), nl = true;
-        skip = false;
-        if (!execute(replace(replace(command, "$files", file), "$out", out))) return false;
-      }
-      if (name != "Main") objects.push_back(out);
-    }
-  } else {
-    insert(command, "$files", files);
-    if (!current.count("output")) output += ".o";
-    for (const auto& file : files) {
-      if (lastModified(output) <= lastModified(file)) skip = false;
-    }
-    if (!skip) puts("");
-    if (!skip && !execute(replace(command, "$out", output))) return false;
-    if (name != "Main") objects.push_back(output);
+  std::vector<std::string> flags = getOrDefault(current, std::string("flags"), std::vector<std::string>{});
+  std::vector<std::string> commands = getOrDefault(current, std::string("command"), (name != "Main" && platform.count("submoduleCommand")) ? platform["submoduleCommand"] : platform["command"]);
+  std::string singleOutput = getOrDefault(current, std::string("output"), std::vector<std::string>{"build/" + name})[0];
+  std::map<std::string, std::string> output;
+  bool buildSingle = false, buildAll = false;
+  for (const auto& command : commands) {
+    if (command[0] == '*') buildAll = true;
+    else buildSingle = true;
+    if (buildSingle && buildAll) break;
   }
-  if (skip) puts(" Skipped!");
+  if (buildSingle) {
+    if (name != "Main") objects.push_back(singleOutput);
+    for (const auto& file : files) {
+      if (lastModified(singleOutput) <= lastModified(file)) {
+        skip = false;
+      }
+    }
+  }
+  if (buildAll) {
+    for (const auto& file : files) {
+      std::string out = singleOutput + '/' + file.substr(file.find_last_of("/\\") + 1) + ".o";
+      if (name != "Main") objects.push_back(out);
+      if (lastModified(out) <= lastModified(file)) {
+        skip = false;
+        output[file] = out;
+      }
+    }
+  }
 
-  skiped = skip;
-  return true;
+  if (skip) return std::pair(true, true);
+  printf("Building module %s...\n", name.c_str());
+  for (auto command : commands) {
+    insert(command, "$include", includes);
+    for (const auto& flag : flags) command += " " + flag;
+    if (command[0] == '*') {
+      command.erase(command.begin());
+      for (const auto& file : output) {
+        if (!execute(replace(replace(command, "$files", file.first), "$out", file.second))) return std::pair(false, false);
+      }
+    } else {
+      insert(command, "$files", files);
+      if (!current.count("output")) singleOutput += ".o";
+      if (!execute(replace(command, "$out", singleOutput))) return std::pair(false, false);
+    }
+  }
+  return std::pair(true, true);
 }
 
 int main(int argc, char** argv) {
-  std::string currentPlatform = "", defaultPlatform = "Windows";
-  std::string currentModule = "";
+  std::string currentPlatform, buildPlatform = "Windows";
+  std::string currentModule;
 
-  if (argc == 2) defaultPlatform = argv[1];
+  if (argc == 2) buildPlatform = argv[1];
   else if (argc != 1) {
     fprintf(stderr, "Usage: OreBuild [Platform Name]\n");
     fflush(stderr);
@@ -149,9 +161,9 @@ int main(int argc, char** argv) {
       expect(file, ':');
       std::string value = readString(file);
       expect(file, ';');
-      if (currentPlatform == defaultPlatform) {
-        if (platform.count(item)) platform[item] += " && " + value;
-        else platform[item] = value;
+      if (currentPlatform == buildPlatform) {
+        if (platform.count(item)) platform[item].push_back(value);
+        else platform[item] = std::vector<std::string>{value};
       }
     } else if (!currentModule.empty()) {
       validate(file, item, moduleItems);
@@ -159,7 +171,7 @@ int main(int argc, char** argv) {
       std::string rawValue = readString(file);
       expect(file, ';');
       std::vector<std::string> values;
-      if (std::count(moduleKeeps.begin(), moduleKeeps.end(), item)) values.push_back(rawValue);
+      if (std::count(moduleKeeps.begin(), moduleKeeps.end(), item)) values = std::vector<std::string>{rawValue};
       else {
         for (auto value : split(rawValue)) {
           for (const auto& var : moduleItems) {
@@ -177,10 +189,9 @@ int main(int argc, char** argv) {
     } else error(file, "Impossible error!");
   }
   fclose(file);
-  printf("Building for %s:\n", defaultPlatform.c_str());
+  printf("Building for %s:\n", buildPlatform.c_str());
   if (!modules.count("Main")) error("Error: No 'Main' module found!\n");
   if (!platform.count("command")) error("Error: No build command for this platform specified!\n");
-
   // for (const auto& module : modules) {
   //   puts(module.first.c_str());
   //   for (const auto& prop : module.second) {
@@ -192,8 +203,7 @@ int main(int argc, char** argv) {
   //   }
   // }
 
-  bool skip;
-  if (buildModule("Main", skip)) {
+  if (buildModule("Main").first) {
     puts("Build succed!");
     return 0;
   }

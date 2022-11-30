@@ -1,10 +1,12 @@
 platform "Windows" {
     command: "@g++ $files -o $out -I*$include"; // @ means not print this command
-    submoduleCommand: "*@g++ -c $files -o $out -I*$include"; // '*' indicates, that command/argument accepts one file
+    // command: "echo $files"; // You can add more than one build command
+    submoduleCommand: "*@g++ -c $files -o $out -I*$include"; // '*' indicates, that command/argument accepts one file (It;s being repeated)
 }
 
 module "Sub" {
-    path: "test/sub"; // Path is required for submodules, it will be addet to include path of parent module, you can add multiple paths
+    path: "test/sub"; // path is just system variable that you can use
+    includePath: "$path"; // includePath will be added to include path of aparent module, you can add multiple paths, or just not specify it at all
     files: "$path/*.cpp";
     // You can override build command here:
     // command: "@echo g++ $files -o $out -I*$include";
