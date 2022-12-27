@@ -65,6 +65,8 @@ std::pair<bool, bool> buildModule(std::string name) {
     for (const auto& object : objects) files.push_back(object);
   }
 
+  files.erase(std::remove_if(files.begin(), files.end(), [&](const std::string file) -> bool { return file.substr(file.find_last_of('.')) == ".h" || file.substr(file.find_last_of('.')) == ".hpp"; }), files.end());
+
   std::vector<std::string> flags = getOrDefault(current, std::string("flags"), std::vector<std::string>{});
   std::vector<std::string> commands = getOrDefault(current, std::string("command"), (name != "Main" && platform.count("submoduleCommand")) ? platform["submoduleCommand"] : platform["command"]);
   std::string singleOutput = getOrDefault(current, std::string("output"), std::vector<std::string>{"build/" + name})[0];
