@@ -1,3 +1,4 @@
 #include "test.h"
+#include <lib.hpp>
 
-int main() { hello("World"); }
+int main() { hello(getSubject()); }

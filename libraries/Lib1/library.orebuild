@@ -1,0 +1,3 @@
+include ".";
+files "*.cpp";
+watch "*.hpp";

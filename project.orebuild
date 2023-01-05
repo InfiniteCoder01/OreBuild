@@ -1,0 +1,4 @@
+library "Lib1";
+files "test/main/** test/sub/*.cpp";
+output "test.exe";
+flags "-Itest/sub";

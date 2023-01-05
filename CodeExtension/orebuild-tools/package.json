@@ -32,12 +32,6 @@
         "scopeName": "source.OreBuild",
         "path": "./syntaxes/orebuild.tmLanguage.json"
       }
-    ],
-    "snippets": [
-      {
-        "language": "orebuild",
-        "path": "./snippets.json"
-      }
     ]
   }
 }
