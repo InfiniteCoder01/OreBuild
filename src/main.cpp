@@ -1,5 +1,6 @@
-#include <string>
+#include <set>
 #include <vector>
+#include <string>
 #include <unordered_map>
 #include <stdio.h>
 #include "common.hpp"
@@ -7,6 +8,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <windows.h>
 #define stat _stat
 
 // cls && g++ src\main.cpp -o OreBuild.exe && OreBuild run
@@ -39,21 +41,21 @@ bool execute(std::string command) {
 }
 
 /*          MAIN          */
-std::vector<std::string> objects;
+std::set<std::string> objects;
 std::vector<std::string> buildModule(const std::string& buildfile) {
   std::unordered_map<std::string, std::vector<std::string>> properties;
   const std::vector<std::string> props = {"library", "include", "files", "watch", "output", "flags"};
   const std::vector<std::string> multiples = {"library", "include", "files", "watch", "flags"};
   const auto path = std::filesystem::current_path();
   const std::string filename = getFilename(buildfile);
-
-  if (buildfile.find_last_of("/\\") != std::string::npos) std::filesystem::current_path(buildfile.substr(0, buildfile.find_last_of("/\\")));
   std::string icaseFilename(filename.length(), ' ');
   transform(filename.begin(), filename.end(), icaseFilename.begin(), ::tolower);
   const bool buildLibrary = icaseFilename == "library.orebuild";
 
+  if (!std::filesystem::exists(buildfile)) error("Buildfile '%s' not found!", buildfile.c_str());
+  if (buildfile.find_last_of("/\\") != std::string::npos) std::filesystem::current_path(buildfile.substr(0, buildfile.find_last_of("/\\")));
+
   FILE* file = fopen(filename.c_str(), "r");
-  if (!file) error("Buildfile '%s' not found!", buildfile.c_str());
   while (true) {
     sskip(file);
     if (feof(file)) break;
@@ -113,10 +115,12 @@ std::vector<std::string> buildModule(const std::string& buildfile) {
 
   if (!buildLibrary) objects.clear();
   for (const auto& library : properties["library"]) {
-    std::vector<std::string> newIncludes = buildModule((libdirPath / library / "library.orebuild").string());
+    auto path = libdirPath / library / "library.orebuild";
+    if(!std::filesystem::exists(path)) continue;
+    std::vector<std::string> newIncludes = buildModule(path.string());
     includes.insert(includes.begin(), newIncludes.begin(), newIncludes.end());
     for (const auto& object : std::filesystem::directory_iterator(libdirPath / library / "build")) {
-      objects.push_back(std::filesystem::absolute(object.path()).string());
+      objects.insert(std::filesystem::absolute(object.path()).string());
     }
   }
 
@@ -175,7 +179,9 @@ std::vector<std::string> buildModule(const std::string& buildfile) {
 }
 
 int main(int argc, char** argv) {
-  libdirPath = std::filesystem::absolute(std::filesystem::path(argv[0]).parent_path() / "libraries");
+  char buffer[1024];
+  GetModuleFileName(nullptr, buffer, sizeof(buffer));
+  libdirPath = std::filesystem::absolute(std::filesystem::path(buffer).parent_path() / "libraries");
   if (argc == 2) {
     if (strcmp(argv[1], "build") == 0) buildModule("project.orebuild");
     else if (strcmp(argv[1], "run") == 0) return !execute(buildModule("project.orebuild")[0]) * -1;
