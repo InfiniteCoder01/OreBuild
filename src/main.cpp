@@ -139,7 +139,7 @@ std::vector<std::string> buildModule(const std::string& buildfile) {
 
     if (!skip) {
       for (const auto& file : files) {
-        std::string command = "g++ -c ";
+        std::string command = (file.substr(file.size() - 2) == ".c" ? "gcc -c " : "g++ -c ");
         command += file + ' ';
         command += "-o build/" + getFilename(file) + ".o" + ' ';
         for (const auto& include : includes) command += "-I" + include + ' ';
