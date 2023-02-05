@@ -30,6 +30,6 @@ void searchPackage(const std::string& name) {
 void installPackage(const std::string& name) {
   if (!std::filesystem::exists(libdirPath)) std::filesystem::create_directories(libdirPath);
   std::filesystem::current_path(libdirPath);
-  system(("git clone https://github.com/" + name).c_str());
+  system(("git clone --recursive https://github.com/" + name).c_str());
   printf("TODO: add auto-generated library.orebuild, for now go to '%s' and make one yourself!\n", libdirPath.string().c_str());
 }
