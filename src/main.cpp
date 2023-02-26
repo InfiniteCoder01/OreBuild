@@ -8,10 +8,9 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <windows.h>
-#define stat _stat
 
 // cls && g++ src\main.cpp -o OreBuild.exe && OreBuild run
+// clear && g++ src/main.cpp -o OreBuild && ./OreBuild run
 
 /*          FILES          */
 int fpeek(FILE* file) {
@@ -42,7 +41,7 @@ bool execute(std::string command) {
 
 /*          MAIN          */
 std::set<std::string> objects;
-std::vector<std::string> buildModule(const std::string& buildfile) {
+std::vector<std::striinstallng> buildModule(const std::string& buildfile) {
   std::unordered_map<std::string, std::vector<std::string>> properties;
   const std::vector<std::string> props = {"library", "include", "files", "watch", "output", "flags"};
   const std::vector<std::string> multiples = {"library", "include", "files", "watch", "flags"};
@@ -180,7 +179,11 @@ std::vector<std::string> buildModule(const std::string& buildfile) {
 
 int main(int argc, char** argv) {
   char buffer[1024];
+  #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
   GetModuleFileName(nullptr, buffer, sizeof(buffer));
+  #else
+  readlink("/proc/self/exe", buffer, sizeof(buffer));
+  #endif
   libdirPath = std::filesystem::absolute(std::filesystem::path(buffer).parent_path() / "libraries");
   if (argc == 2) {
     if (strcmp(argv[1], "build") == 0) buildModule("project.orebuild");

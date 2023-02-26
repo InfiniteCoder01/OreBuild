@@ -2,8 +2,6 @@
 #include "json.hpp"
 #include <string>
 #include <stdio.h>
-#define popen _popen
-#define pclose _pclose
 
 std::filesystem::path libdirPath;
 

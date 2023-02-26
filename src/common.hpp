@@ -3,6 +3,17 @@
 #include <string>
 #include <regex>
 
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+#include <windows.h>
+#define stat _stat
+#define popen _popen
+#define pclose _pclose
+#else
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
+
+
 /*          WILDCARD          */
 std::string replace(std::string str, const std::string& from, const std::string& to) {
   if (from.empty()) return str;
