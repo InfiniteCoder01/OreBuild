@@ -9,8 +9,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-// cls && g++ src\main.cpp -o OreBuild.exe && OreBuild run
-// clear && g++ src/main.cpp -o OreBuild && ./OreBuild run
+// Windows: g++ -std=c++17 src\main.cpp -o bin\OreBuild.exe
+// Linux: g++ -std=c++17 src/main.cpp -o bin/OreBuild
 
 /*          FILES          */
 int fpeek(FILE* file) {
@@ -41,7 +41,7 @@ bool execute(std::string command) {
 
 /*          MAIN          */
 std::set<std::string> objects;
-std::vector<std::striinstallng> buildModule(const std::string& buildfile) {
+std::vector<std::string> buildModule(const std::string& buildfile) {
   std::unordered_map<std::string, std::vector<std::string>> properties;
   const std::vector<std::string> props = {"library", "include", "files", "watch", "output", "flags"};
   const std::vector<std::string> multiples = {"library", "include", "files", "watch", "flags"};
