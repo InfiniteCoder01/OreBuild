@@ -43,7 +43,7 @@ bool execute(std::string command) {
 std::set<std::string> objects;
 std::vector<std::string> buildModule(const std::string& buildfile) {
   std::unordered_map<std::string, std::vector<std::string>> properties;
-  const std::vector<std::string> props = {"library", "include", "files", "watch", "output", "flags"};
+  const std::vector<std::string> props = {"library", "include", "files", "watch", "output", "flags", "compiler"};
   const std::vector<std::string> multiples = {"library", "include", "files", "watch", "flags"};
   const auto path = std::filesystem::current_path();
   const std::string filename = getFilename(buildfile);
@@ -115,7 +115,7 @@ std::vector<std::string> buildModule(const std::string& buildfile) {
   if (!buildLibrary) objects.clear();
   for (const auto& library : properties["library"]) {
     auto path = libdirPath / library / "library.orebuild";
-    if(!std::filesystem::exists(path)) continue;
+    if (!std::filesystem::exists(path)) continue;
     std::vector<std::string> newIncludes = buildModule(path.string());
     includes.insert(includes.begin(), newIncludes.begin(), newIncludes.end());
     for (const auto& object : std::filesystem::directory_iterator(libdirPath / library / "build")) {
@@ -123,6 +123,7 @@ std::vector<std::string> buildModule(const std::string& buildfile) {
     }
   }
 
+  std::string compiler = properties.count("compiler") ? properties["compiler"][0] : "gcc";
   if (buildLibrary) {
     if (properties.count("output")) error("Library output specified!");
     if (!std::filesystem::exists("build")) std::filesystem::create_directory("build");
@@ -138,7 +139,8 @@ std::vector<std::string> buildModule(const std::string& buildfile) {
 
     if (!skip) {
       for (const auto& file : files) {
-        std::string command = (file.substr(file.size() - 2) == ".c" ? "gcc -c " : "g++ -c ");
+        std::string command = compiler + " -c ";
+        if (file.substr(file.size() - 4) == ".cpp") std::replace(command.begin(), command.begin() + compiler.size(), 'c', '+');
         command += file + ' ';
         command += "-o build/" + getFilename(file) + ".o" + ' ';
         for (const auto& include : includes) command += "-I" + include + ' ';
@@ -153,7 +155,8 @@ std::vector<std::string> buildModule(const std::string& buildfile) {
   } else {
     if (!properties.count("output")) error("No output specified!");
     files.insert(files.begin(), objects.begin(), objects.end());
-    std::string command = "@g++ ";
+    std::string command = "@" + compiler + " ";
+    std::replace(command.begin(), command.end(), 'c', '+');
 
     bool skip = true;
     watch.insert(watch.end(), files.begin(), files.end());
@@ -179,11 +182,11 @@ std::vector<std::string> buildModule(const std::string& buildfile) {
 
 int main(int argc, char** argv) {
   char buffer[1024];
-  #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
   GetModuleFileName(nullptr, buffer, sizeof(buffer));
-  #else
+#else
   readlink("/proc/self/exe", buffer, sizeof(buffer));
-  #endif
+#endif
   libdirPath = std::filesystem::absolute(std::filesystem::path(buffer).parent_path() / "libraries");
   if (argc == 2) {
     if (strcmp(argv[1], "build") == 0) buildModule("project.orebuild");
