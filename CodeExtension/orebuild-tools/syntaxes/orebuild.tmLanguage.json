@@ -18,7 +18,7 @@
 	"repository": {
 		"keywords": {
 			"name": "keyword.control.orebuild",
-			"match": "\\b(library|include|files|watch|output|flags|compiler)\\b"
+			"match": "\\b(library|include|files|watch|output|flags|linkerFlags|compiler)\\b"
 		},
 		"numerics": {
 			"name": "constant.numeric.orebuild",

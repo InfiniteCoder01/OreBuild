@@ -41,10 +41,11 @@ bool execute(std::string command) {
 
 /*          MAIN          */
 std::set<std::string> objects;
+std::vector<std::string> linkerFlags;
 std::vector<std::string> buildModule(const std::string& buildfile) {
   std::unordered_map<std::string, std::vector<std::string>> properties;
-  const std::vector<std::string> props = {"library", "include", "files", "watch", "output", "flags", "compiler"};
-  const std::vector<std::string> multiples = {"library", "include", "files", "watch", "flags"};
+  const std::vector<std::string> props = {"library", "include", "files", "watch", "output", "flags", "linkerFlags", "compiler"};
+  const std::vector<std::string> multiples = {"library", "include", "files", "watch", "flags", "linkerFlags"};
   const auto path = std::filesystem::current_path();
   const std::string filename = getFilename(buildfile);
   std::string icaseFilename(filename.length(), ' ');
@@ -112,7 +113,7 @@ std::vector<std::string> buildModule(const std::string& buildfile) {
     includes.insert(includes.end(), includesFound.begin(), includesFound.end());
   }
 
-  if (!buildLibrary) objects.clear();
+  if (!buildLibrary) objects.clear(), linkerFlags.clear();
   for (const auto& library : properties["library"]) {
     auto path = libdirPath / library / "library.orebuild";
     if (!std::filesystem::exists(path)) continue;
@@ -127,6 +128,7 @@ std::vector<std::string> buildModule(const std::string& buildfile) {
   if (buildLibrary) {
     if (properties.count("output")) error("Library output specified!");
     if (!std::filesystem::exists("build")) std::filesystem::create_directory("build");
+    if (properties.count("linkerFlags")) linkerFlags.insert(linkerFlags.end(), properties["linkerFlags"].begin(), properties["linkerFlags"].end());
 
     bool skip = true;
     watch.insert(watch.end(), files.begin(), files.end());
@@ -172,6 +174,7 @@ std::vector<std::string> buildModule(const std::string& buildfile) {
       command += "-o " + properties["output"][0] + ' ';
       for (const auto& include : includes) command += "-I" + include + ' ';
       for (const auto& flag : properties["flags"]) command += flag + ' ';
+      for (const auto& flag : linkerFlags) command += flag + ' ';
       if (!execute(command.c_str())) exit(-1);
     }
 
