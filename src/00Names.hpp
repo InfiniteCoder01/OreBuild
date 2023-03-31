@@ -17,7 +17,10 @@ void installPackage(const std::string& name);
 /*          EXEC          */
 inline std::string getFilename(std::string path) { return path.find_last_of("/\\") == std::string::npos ? path : path.substr(path.find_last_of("/\\") + 1); }
 std::filesystem::path getProgramPath();
-inline uint64_t lastModified(const std::string& filename) { return std::filesystem::last_write_time(filename).time_since_epoch().count(); }
+inline uint64_t lastModified(const std::string& filename) {
+  if (!std::filesystem::exists(filename)) return 0;
+  return std::filesystem::last_write_time(filename).time_since_epoch().count();
+}
 
 bool execute(std::string command);
 
