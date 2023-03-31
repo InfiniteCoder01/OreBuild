@@ -1,11 +1,9 @@
-#include "common.hpp"
+#include "00Names.hpp"
 #include "json.hpp"
-#include <string>
-#include <stdio.h>
 
-std::filesystem::path libdirPath;
+using namespace std::literals;
 
-std::string executeWOut(const std::string& command) {
+static std::string executeWOut(const std::string& command) {
   std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
   if (!pipe) error("Failed to execute '%s'!\n", command.c_str());
   std::string result;
@@ -17,7 +15,7 @@ std::string executeWOut(const std::string& command) {
 }
 
 void searchPackage(const std::string& name) {
-  auto response = nlohmann::json::parse(executeWOut("gh search repos \"" + name + "\" --json fullName --json language --json license"));
+  auto response = nlohmann::json::parse(executeWOut("gh search repos \""s + name + "\" --json fullName --json language --json license"s));
   for (const auto& lib : response) {
     std::string language = lib["language"].get<std::string>();
     if (language != "C" && language != "C++") continue;

@@ -1,0 +1,54 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-c",
+      "-std=c++17",
+      "-o",
+      "bin/OreBuild",
+      "src/exec.cpp"
+    ],
+    "directory": "/mnt/D/Dev/C++/Tools/OreBuild",
+    "file": "/mnt/D/Dev/C++/Tools/OreBuild/src/exec.cpp",
+    "output": "/mnt/D/Dev/C++/Tools/OreBuild/bin/OreBuild"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-c",
+      "-std=c++17",
+      "-o",
+      "bin/OreBuild",
+      "src/main.cpp"
+    ],
+    "directory": "/mnt/D/Dev/C++/Tools/OreBuild",
+    "file": "/mnt/D/Dev/C++/Tools/OreBuild/src/main.cpp",
+    "output": "/mnt/D/Dev/C++/Tools/OreBuild/bin/OreBuild"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-c",
+      "-std=c++17",
+      "-o",
+      "bin/OreBuild",
+      "src/package.cpp"
+    ],
+    "directory": "/mnt/D/Dev/C++/Tools/OreBuild",
+    "file": "/mnt/D/Dev/C++/Tools/OreBuild/src/package.cpp",
+    "output": "/mnt/D/Dev/C++/Tools/OreBuild/bin/OreBuild"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-c",
+      "-std=c++17",
+      "-o",
+      "bin/OreBuild",
+      "src/wildcard.cpp"
+    ],
+    "directory": "/mnt/D/Dev/C++/Tools/OreBuild",
+    "file": "/mnt/D/Dev/C++/Tools/OreBuild/src/wildcard.cpp",
+    "output": "/mnt/D/Dev/C++/Tools/OreBuild/bin/OreBuild"
+  }
+]

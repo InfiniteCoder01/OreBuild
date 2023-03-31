@@ -1,18 +1,5 @@
-#pragma once
-#include <filesystem>
-#include <string>
+#include "00Names.hpp"
 #include <regex>
-
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-#include <windows.h>
-#define stat _stat
-#define popen _popen
-#define pclose _pclose
-#else
-#include <sys/stat.h>
-#include <unistd.h>
-#endif
-
 
 /*          WILDCARD          */
 std::string replace(std::string str, const std::string& from, const std::string& to) {
@@ -30,7 +17,7 @@ bool wildcardMatch(const std::string& str, const std::string& pattern) {
   return std::regex_match(str, std::regex(replace(replace(replace(std::string(std::regex_replace(pattern, specialChars, R"(\$&)")), "?", "."), "**", ".+"), "*", "[^/]+")));
 }
 
-std::vector<std::string> wildcard(const std::string& pattern, bool dir = false) {
+std::vector<std::string> wildcard(const std::string& pattern, bool dir) {
   std::vector<std::string> result;
   size_t wildcardStart = pattern.find_first_of("*?");
   if (wildcardStart == std::string::npos) return std::vector<std::string>{pattern};
@@ -46,21 +33,3 @@ std::vector<std::string> wildcard(const std::string& pattern, bool dir = false) 
   }
   return result;
 }
-
-/*          ERRORS          */
-template <typename... Args> void error(FILE* file, Args... args) {
-  if (file) {
-    uint32_t pos = ftell(file);
-    fseek(file, 0, SEEK_SET);
-    uint16_t line = 1;
-    for (int i = 0; i < pos; i++) {
-      if (getc(file) == '\n') line++;
-    }
-    fprintf(stderr, "Error at around file:%u: ", line);
-  }
-  fprintf(stderr, args...);
-  fflush(stderr);
-  exit(-1);
-}
-
-template <typename... Args> inline void error(Args... args) { error<Args...>(nullptr, args...); }
