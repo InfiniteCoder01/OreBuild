@@ -27,7 +27,7 @@ bool execute(std::string command);
 /*          ERRORS          */
 template <typename... Args> void error(FILE* file, Args... args) {
   if (file) {
-    uint32_t pos = ftell(file);
+    const uint32_t pos = ftell(file);
     fseek(file, 0, SEEK_SET);
     uint16_t line = 1;
     for (int i = 0; i < pos; i++) {

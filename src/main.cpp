@@ -14,7 +14,7 @@ std::filesystem::path libdirPath;
 
 /*          FILES          */
 int fpeek(FILE* file) {
-  int c = fgetc(file);
+  const int c = fgetc(file);
   ungetc(c, file);
   return c;
 }
@@ -26,13 +26,16 @@ inline void sskip(FILE* file) {
 /*          MAIN          */
 std::set<std::string> objects;
 std::vector<std::string> linkerFlags;
+bool relink, skip;
 
-std::vector<std::string> buildModule(const std::filesystem::path& buildfile) {
+std::vector<std::string> buildModule(const std::filesystem::path& buildfile, bool& skip) {
+  // * Variables & Constants
   std::unordered_map<std::string, std::vector<std::string>> properties;
 
   const std::set<std::string> props = {"library", "include", "files", "watch", "output", "flags", "linkerFlags", "compiler"};
   const std::set<std::string> multiples = {"library", "include", "files", "watch", "flags", "linkerFlags"};
 
+  // * Files & Names
   if (!std::filesystem::exists(buildfile)) error("Buildfile '%s' not found!", buildfile.c_str());
   const auto originalPath = std::filesystem::current_path();
   std::filesystem::current_path(buildfile.parent_path());
@@ -42,6 +45,7 @@ std::vector<std::string> buildModule(const std::filesystem::path& buildfile) {
   std::transform(filename.begin(), filename.end(), icaseFilename.begin(), ::tolower);
   const bool link = icaseFilename == "project.orebuild";
 
+  // * Parse build file
   FILE* file = fopen(filename.c_str(), "r");
   while (true) {
     sskip(file);
@@ -50,14 +54,15 @@ std::vector<std::string> buildModule(const std::filesystem::path& buildfile) {
       if (fgetc(file), fpeek(file) == '/') {
         while (!feof(file) && fgetc(file) != '\n') continue;
         continue;
-      } else ungetc('/', file);
+      }
+      ungetc('/', file);
     }
 
     std::string property(1, getc(file));
     if (!isalpha(property[0])) error(file, "Expected property name!\n");
-    while (isalpha(fpeek(file))) property += fgetc(file);
+    while (isalpha(fpeek(file))) property += (char)fgetc(file);
     if (!props.count(property)) error(file, "Invalid property: %s!\n", property.c_str());
-    bool multiple = multiples.count(property);
+    const bool multiple = multiples.count(property);
 
     sskip(file);
     if (fgetc(file) != '"') error(file, "Expected property value as double-quoted string!\n");
@@ -81,12 +86,14 @@ std::vector<std::string> buildModule(const std::filesystem::path& buildfile) {
   }
   fclose(file);
 
+  // * Add missing keys
   if (!properties.count("library")) properties["library"] = {};
   if (!properties.count("include")) properties["include"] = {"."};
   if (!properties.count("files")) properties["files"] = {"src/**.cpp"};
   if (!properties.count("watch")) properties["watch"] = {"src/**.h", "src/**.hpp"};
   if (!properties.count("flags")) properties["flags"] = {};
 
+  // * Apply wildcards and gather files
   std::vector<std::string> files, watch, includes;
   for (const auto& pattern : properties["files"]) {
     std::vector<std::string> filesFound = wildcard(pattern);
@@ -101,47 +108,63 @@ std::vector<std::string> buildModule(const std::filesystem::path& buildfile) {
     includes.insert(includes.end(), includesFound.begin(), includesFound.end());
   }
 
+  // * Dependencies
+  if (link) {
+    objects.clear();
+    linkerFlags.clear();
+    relink = false;
+  }
+
   if (properties.count("linkerFlags")) linkerFlags.insert(linkerFlags.end(), properties["linkerFlags"].begin(), properties["linkerFlags"].end());
 
-  if (link) objects.clear(), linkerFlags.clear();
   std::vector<std::string> localIncludes;
+  skip = true;
   for (const auto& library : properties["library"]) {
     auto path = libdirPath / library / "library.orebuild";
-    if (!std::filesystem::exists(path)) continue;
-    std::vector<std::string> newIncludes = buildModule(std::filesystem::absolute(path));
+    if (!std::filesystem::exists(path)) continue; // TODO: optional dependencies
+
+    bool skipModule = true;
+    std::vector<std::string> newIncludes = buildModule(std::filesystem::absolute(path), skipModule);
+    if (!skipModule) skip = false;
     localIncludes.insert(localIncludes.end(), newIncludes.begin(), newIncludes.end());
     for (const auto& object : std::filesystem::directory_iterator(libdirPath / library / "build")) {
       objects.insert(std::filesystem::absolute(object.path()).string());
     }
   }
 
-  std::string compiler = properties.count("compiler") ? properties["compiler"][0] : "gcc";
+  // * Get the compile commands
+  const std::string compiler = properties.count("compiler") ? properties["compiler"][0] : "gcc";
   std::string cxxCompiler = compiler;
   if (compiler.substr(compiler.size() - 2) == "cc") std::replace(cxxCompiler.end() - 2, cxxCompiler.end(), 'c', '+');
   else cxxCompiler += "++";
 
-  if (!std::filesystem::exists("build")) std::filesystem::create_directory("build");
+  // * Check for skips
+  if (!std::filesystem::exists("build")) {
+    std::filesystem::create_directory("build");
+    skip = false;
+  }
 
-  bool skip = true;
-  watch.insert(watch.end(), files.begin(), files.end());
-  for (const auto& file : watch) {
-    if (lastModified(file) > lastModified("build/" + getFilename(files[0]) + ".o")) {
-      skip = false;
-      break;
+  if (skip) {
+    for (const auto& file : watch) {
+      if (lastModified(file) >= lastModified("build")) {
+        skip = false;
+        break;
+      }
     }
   }
 
-  if (!skip) {
-    for (const auto& file : files) {
-      std::string command = compiler + " -c ";
-      if (file.substr(file.size() - 4) == ".cpp") command = cxxCompiler + " -c ";
-      command += file + ' ';
-      command += "-o build/" + getFilename(file) + ".o" + ' ';
-      for (const auto& include : includes) command += "-I" + include + ' ';
-      for (const auto& include : localIncludes) command += "-I" + include + ' ';
-      for (const auto& flag : properties["flags"]) command += flag + ' ';
-      if (!execute(command.c_str())) exit(-1);
-    }
+  // * Recompile some objects
+  for (const auto& file : files) {
+    if (skip && lastModified(file) < lastModified("build/" + getFilename(files[0]) + ".o")) continue;
+    std::string command = compiler + " -c ";
+    if (file.substr(file.size() - 4) == ".cpp") command = cxxCompiler + " -c ";
+    command += file + ' ';
+    command += "-o build/" + getFilename(file) + ".o" + ' ';
+    for (const auto& include : includes) command += "-I" + include + ' ';
+    for (const auto& include : localIncludes) command += "-I" + include + ' ';
+    for (const auto& flag : properties["flags"]) command += flag + ' ';
+    if (!execute(command)) exit(-1);
+    relink = true;
   }
 
   if (!link) {
@@ -155,17 +178,8 @@ std::vector<std::string> buildModule(const std::filesystem::path& buildfile) {
     objects.insert(std::filesystem::absolute(object.path()).string());
   }
 
-  if (skip) {
-    for (const auto& object : objects) {
-      if (lastModified(object) > lastModified(properties["output"][0])) {
-        skip = false;
-        break;
-      }
-    }
-  }
-
   if (!properties.count("output")) error("No output specified!");
-  if (!skip) {
+  if (relink) {
     std::string command = "@" + cxxCompiler + " ";
     std::replace(command.begin(), command.end(), 'c', '+');
 
@@ -173,7 +187,7 @@ std::vector<std::string> buildModule(const std::filesystem::path& buildfile) {
     command += "-o " + properties["output"][0] + ' ';
 
     for (const auto& flag : linkerFlags) command += flag + ' ';
-    if (!execute(command.c_str())) exit(-1);
+    if (!execute(command)) exit(-1);
   }
 
   std::filesystem::current_path(originalPath);
@@ -183,8 +197,9 @@ std::vector<std::string> buildModule(const std::filesystem::path& buildfile) {
 int main(int argc, char** argv) { // TODO: better command line argument parser
   libdirPath = std::filesystem::absolute(getProgramPath().parent_path() / "libraries");
   if (argc == 2) {
-    if (strcmp(argv[1], "build") == 0) buildModule(std::filesystem::absolute("project.orebuild"));
-    else if (strcmp(argv[1], "run") == 0) return !execute(buildModule(std::filesystem::absolute("project.orebuild"))[0]) * -1;
+    bool skip = true;
+    if (strcmp(argv[1], "build") == 0) buildModule(std::filesystem::absolute("project.orebuild"), skip);
+    else if (strcmp(argv[1], "run") == 0) return !execute(buildModule(std::filesystem::absolute("project.orebuild"), skip)[0]) * -1;
     else error("Unknown cmd option: %s!\n", argv[1]);
   } else if (argc == 3) {
     if (strcmp(argv[1], "search") == 0) searchPackage(argv[2]);
