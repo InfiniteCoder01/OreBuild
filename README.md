@@ -6,9 +6,9 @@
  OreBuild (build/run/search/install) [githubPackageID]
  ```
 
- To build for linux, install g++ and run the following command:
+ To build for linux, install g++ and git and run the following command:
  ```
- g++ src/main.cpp -o bin/OreBuild && sudo cp ./bin/OreBuild /usr/bin
+ git clone https://github.com/InfiniteCoder01/OreBuild.git && g++ -std=c++17 -Ofast src/*.cpp -o bin/OreBuild && sudo cp ./bin/OreBuild /usr/bin
  ```
  Or you can create a link to it:
  ```
