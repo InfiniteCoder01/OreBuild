@@ -27,6 +27,7 @@ inline void sskip(FILE* file) {
 std::set<std::string> objects;
 std::vector<std::string> linkerFlags;
 bool relink, skip;
+bool rebuild = false;
 
 std::vector<std::string> buildModule(const std::filesystem::path& buildfile, bool& skip) {
   // * Variables & Constants
@@ -118,7 +119,7 @@ std::vector<std::string> buildModule(const std::filesystem::path& buildfile, boo
   if (properties.count("linkerFlags")) linkerFlags.insert(linkerFlags.end(), properties["linkerFlags"].begin(), properties["linkerFlags"].end());
 
   std::vector<std::string> localIncludes;
-  skip = true;
+  skip = !rebuild;
   for (const auto& library : properties["library"]) {
     auto path = libdirPath / library / "library.orebuild";
     if (!std::filesystem::exists(path)) continue; // TODO: optional dependencies
@@ -198,7 +199,8 @@ int main(int argc, char** argv) { // TODO: better command line argument parser
   libdirPath = std::filesystem::absolute(getProgramPath().parent_path() / "libraries");
   if (argc == 2) {
     bool skip = true;
-    if (strcmp(argv[1], "build") == 0) buildModule(std::filesystem::absolute("project.orebuild"), skip);
+    if (strcmp(argv[1], "rebuild") == 0) rebuild = true;
+    if (strcmp(argv[1], "build") == 0 || strcmp(argv[1], "rebuild") == 0) buildModule(std::filesystem::absolute("project.orebuild"), skip);
     else if (strcmp(argv[1], "run") == 0) return !execute(buildModule(std::filesystem::absolute("project.orebuild"), skip)[0]) * -1;
     else error("Unknown cmd option: %s!\n", argv[1]);
   } else if (argc == 3) {
