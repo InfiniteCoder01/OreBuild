@@ -70,15 +70,15 @@ std::unordered_map<std::string, std::vector<std::string>> parseFile(const std::s
         while (isalpha(fpeek(file))) condition += (char)fgetc(file);
       }
       if (fgetc(file) != ']') error(file, "Expected ']'!\n");
-      if(ignore) {
-        match(file, ':');
-        continue;
-      }
 
       const bool value = (platform == condition) || (configuration == condition) || condition == "*";
-      ignore = value != expect;
-      if (!match(file, ':')) resetIgnore = true;
-      else continue;
+      if (!match(file, ':') && !ignore) {
+        resetIgnore = true;
+        ignore = value != expect;
+      } else {
+        ignore = value != expect;
+        continue;
+      }
       sskip(file);
     }
 
