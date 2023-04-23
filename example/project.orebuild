@@ -1,4 +1,15 @@
 library "Lib1";
 files "test/main/** test/sub/*.cpp";
-output "./testBin";
+watch "test/**.h test/**.hpp";
 flags "-Itest/sub -std=c++11";
+
+[Windows] output "testBin.exe";
+[Linux] output "./testBin";
+
+[Debug]:
+flags "-DDEBUG";
+[Linux] flags "-fsanitize=address";
+[Linux] linkerFlags "-fsanitize=address";
+
+[*]:
+[!Release] flags "-DNRELEASE";

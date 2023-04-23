@@ -1,9 +1,15 @@
 #pragma once
+#include <unordered_map>
 #include <filesystem>
 #include <string>
 #include <vector>
 
 extern std::filesystem::path libdirPath;
+extern std::string platform, configuration;
+extern bool rebuild;
+
+std::unordered_map<std::string, std::vector<std::string>> parseFile(const std::string& filename);
+std::vector<std::string> buildModule(const std::filesystem::path& buildfile, bool& skip);
 
 /*          WILDCARD          */
 std::string replace(std::string str, const std::string& from, const std::string& to);
@@ -17,7 +23,7 @@ void installPackage(const std::string& name);
 /*          EXEC          */
 inline std::string getFilename(std::string path) { return path.find_last_of("/\\") == std::string::npos ? path : path.substr(path.find_last_of("/\\") + 1); }
 std::filesystem::path getProgramPath();
-inline uint64_t lastModified(const std::string& filename) {
+inline uint64_t lastModified(const std::filesystem::path& filename) {
   if (!std::filesystem::exists(filename)) return 0;
   return std::filesystem::last_write_time(filename).time_since_epoch().count();
 }
