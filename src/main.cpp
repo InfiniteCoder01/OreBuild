@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-// Windows: g++ -std=c++17 -Ofast src\*.cpp -o bin\OreBuild.exe
+// Windows: g++ -std=c++17 -Ofast src\*.cpp -o bin\OreBuild.exe -static
 // Linux: g++ -std=c++17 -Ofast src/*.cpp -o bin/OreBuild
 
 std::filesystem::path libdirPath;
